@@ -4,6 +4,7 @@ import { getAuditLogs, getCompanySettings } from '@/lib/services/settings'
 import { getProfiles, getRoles, getPermissions } from '@/lib/services/auth'
 import type { Role, Permission } from '@/lib/types/database'
 import { cn } from '@/lib/utils'
+import { usePageTitle } from '@/lib/hooks/usePageTitle'
 import { toast } from 'sonner'
 
 const actionLabels: Record<string, { label: string; badge: string }> = {
@@ -46,6 +47,7 @@ const fieldLabels: Record<string, string> = {
 }
 
 export function AuditLogPage() {
+    usePageTitle('سجل التدقيق')
     const [logs, setLogs] = useState<{
         id: string; table_name: string; record_id: string; action: string;
         old_data: Record<string, unknown> | null; new_data: Record<string, unknown> | null;

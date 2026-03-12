@@ -11,9 +11,11 @@ import {
 } from '@/lib/services/auth'
 import type { Profile, Role } from '@/lib/types/database'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePageTitle } from '@/lib/hooks/usePageTitle'
 import { toast } from 'sonner'
 
 export function UsersPage() {
+    usePageTitle('المستخدمين')
     const { can } = useAuthStore()
     const [profiles, setProfiles] = useState<Profile[]>([])
     const [roles, setRoles] = useState<Role[]>([])

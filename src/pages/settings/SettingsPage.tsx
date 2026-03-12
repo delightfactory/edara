@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Settings, Save, Loader2, Building2, DollarSign, ShoppingCart, Users, Monitor } from 'lucide-react'
 import { getCompanySettings, updateCompanySetting, type CompanySetting } from '@/lib/services/settings'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePageTitle } from '@/lib/hooks/usePageTitle'
 import { toast } from 'sonner'
 
 const categoryConfig: Record<string, { label: string; icon: typeof Settings }> = {
@@ -32,6 +33,7 @@ const keyLabels: Record<string, string> = {
 }
 
 export function SettingsPage() {
+    usePageTitle('الإعدادات')
     const [settings, setSettings] = useState<CompanySetting[]>([])
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState<string | null>(null)
@@ -133,7 +135,7 @@ export function SettingsPage() {
                                                     className={`relative h-7 w-12 rounded-full transition-colors ${currentValue === 'true' ? 'bg-primary-500' : 'bg-surface-300 dark:bg-surface-600'} ${!canUpdate ? 'opacity-50 cursor-not-allowed' : ''}`}
                                                     disabled={!canUpdate}
                                                 >
-                                                    <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all ${currentValue === 'true' ? 'left-0.5' : 'left-[calc(100%-1.625rem)]'}`} />
+                                                    <span className="absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-all" style={{ insetInlineStart: currentValue === 'true' ? '0.125rem' : 'calc(100% - 1.625rem)' }} />
                                                 </button>
                                             ) : (
                                                 <input

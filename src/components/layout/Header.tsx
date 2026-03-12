@@ -248,8 +248,9 @@ export function Header() {
 
                 <div className="h-8 w-px mx-1.5" style={{ backgroundColor: 'var(--divider-color)' }} />
 
-                {/* User avatar */}
-                <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 cursor-pointer transition-colors"
+                {/* User avatar — link to profile */}
+                <div className="flex items-center gap-2.5 rounded-xl px-2 py-1.5 cursor-pointer transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+                    onClick={() => navigate('/profile')} title="الملف الشخصي"
                     style={{ color: 'var(--text-primary)' }}>
                     <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-700 text-xs font-bold text-white shadow-sm">
                         {profile?.full_name?.[0] || 'U'}

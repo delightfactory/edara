@@ -10,6 +10,7 @@ import {
 } from '@/lib/services/auth'
 import type { Role, Permission } from '@/lib/types/database'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePageTitle } from '@/lib/hooks/usePageTitle'
 import { toast } from 'sonner'
 
 // Group permissions by module
@@ -47,6 +48,7 @@ const MODULE_LABELS: Record<string, string> = {
 }
 
 export function RolesPage() {
+    usePageTitle('الأدوار والصلاحيات')
     const { can } = useAuthStore()
     const [roles, setRoles] = useState<Role[]>([])
     const [permissions, setPermissions] = useState<Permission[]>([])

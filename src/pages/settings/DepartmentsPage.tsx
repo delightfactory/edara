@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { Building2, Plus, Edit3, Trash2, Loader2, X, Users as UsersIcon, Save } from 'lucide-react'
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/lib/services/settings'
+import { getEmployeeCountByDepartment } from '@/lib/services/hr'
 import { getProfiles } from '@/lib/services/auth'
 import type { Profile } from '@/lib/types/database'
 import { useAuthStore } from '@/stores/auth-store'
+import { usePageTitle } from '@/lib/hooks/usePageTitle'
 import { toast } from 'sonner'
 
 interface DepartmentWithManager {
@@ -18,6 +20,7 @@ interface DepartmentWithManager {
 }
 
 export function DepartmentsPage() {
+    usePageTitle('الأقسام')
     const { can } = useAuthStore()
     const [departments, setDepartments] = useState<DepartmentWithManager[]>([])
     const [profiles, setProfiles] = useState<Profile[]>([])
@@ -26,6 +29,7 @@ export function DepartmentsPage() {
     const [editDept, setEditDept] = useState<DepartmentWithManager | null>(null)
     const [form, setForm] = useState({ name: '', parent_id: '', manager_id: '' })
     const [saving, setSaving] = useState(false)
+    const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({})
 
     useEffect(() => {
         loadData()
@@ -33,9 +37,10 @@ export function DepartmentsPage() {
 
     const loadData = async () => {
         try {
-            const [depts, profs] = await Promise.all([getDepartments(), getProfiles()])
+            const [depts, profs, counts] = await Promise.all([getDepartments(), getProfiles(), getEmployeeCountByDepartment()])
             setDepartments(depts)
             setProfiles(profs)
+            setEmployeeCounts(counts)
         } catch {
             toast.error('خطأ في تحميل البيانات')
         } finally {
@@ -144,12 +149,13 @@ export function DepartmentsPage() {
                     <div className="overflow-x-auto">
                         <table className="w-full min-w-[500px]">
                             <thead>
-                                <tr className="edara-thead">
-                                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>القسم</th>
-                                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>المدير</th>
-                                    <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>الحالة</th>
-                                    <th className="px-5 py-3 text-end text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>إجراءات</th>
-                                </tr>
+                                    <tr className="edara-thead">
+                                        <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>القسم</th>
+                                        <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>المدير</th>
+                                        <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>الموظفين</th>
+                                        <th className="px-5 py-3 text-start text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>الحالة</th>
+                                        <th className="px-5 py-3 text-end text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>إجراءات</th>
+                                    </tr>
                             </thead>
                             <tbody>
                                 {departments.map((dept, i) => (
@@ -173,6 +179,15 @@ export function DepartmentsPage() {
                                                     {dept.manager?.full_name || 'غير محدد'}
                                                 </span>
                                             </div>
+                                        </td>
+                                        <td className="px-5 py-3.5 text-center">
+                                            <span className="inline-flex items-center justify-center min-w-[28px] h-6 rounded-full text-xs font-bold px-2"
+                                                style={{
+                                                    backgroundColor: (employeeCounts[dept.id] || 0) > 0 ? 'var(--color-primary-50)' : 'var(--empty-bg)',
+                                                    color: (employeeCounts[dept.id] || 0) > 0 ? 'var(--color-primary-600)' : 'var(--text-muted)',
+                                                }}>
+                                                {employeeCounts[dept.id] || 0}
+                                            </span>
                                         </td>
                                         <td className="px-5 py-3.5">
                                             <span className={`badge ${dept.is_active ? 'badge-success' : 'badge-danger'}`}>
