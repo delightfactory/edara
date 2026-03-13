@@ -262,10 +262,10 @@ export function StockMovementsPage() {
                         <p className="page-subtitle">إدارة التحويلات والتسويات</p>
                     </div>
                 </div>
-                {can('inventory.stock.create') && (
+                {(can('inventory.transfers.create') || can('inventory.adjustments.create') || can('inventory.stock.create')) && (
                     <div className="flex items-center gap-2">
-                        <button onClick={openTransfer} className="btn btn-secondary"><ArrowLeftRight className="h-4 w-4" /> تحويل</button>
-                        <button onClick={openCreate} className="btn btn-primary"><Plus className="h-4 w-4" /> حركة جديدة</button>
+                        {can('inventory.transfers.create') && <button onClick={openTransfer} className="btn btn-secondary"><ArrowLeftRight className="h-4 w-4" /> تحويل</button>}
+                        {(can('inventory.adjustments.create') || can('inventory.stock.create')) && <button onClick={openCreate} className="btn btn-primary"><Plus className="h-4 w-4" /> حركة جديدة</button>}
                     </div>
                 )}
             </div>

@@ -118,3 +118,36 @@ This workflow defines the EXACT steps to follow when developing any module in th
     - Boolean settings (`credit_limit_check`, `require_price_approval`, `gps_required_for_visits`) are enforced
     - If the module introduces a new configurable feature, **add a new setting** to `company_settings` table
     - Update `SettingsPage.tsx` `keyLabels` and `categoryConfig` when adding new settings
+
+### Phase J: Permissions Verification (MANDATORY)
+
+> [!CAUTION]
+> This phase MUST be completed before any module is considered done.
+> Follow `/design-rules` Section 9 for full guidelines.
+
+17. **DB Permissions**:
+    - New permissions seeded in `permissions` table (`module.entity.action` format)
+    - New permissions assigned to `admin` role via `role_permissions`
+
+18. **Navigation permissions**:
+    - Every nav item in `navigation.ts` has a `permission` field
+
+19. **Page-level guards**:
+    - Every page component checks `can('module.entity.read')` at top
+    - Pages return "no permission" or redirect if check fails
+
+20. **Action button permissions**:
+    - Create button: `can('module.entity.create')`
+    - Edit button: `can('module.entity.update')`
+    - Delete button: `can('module.entity.delete')` — **NEVER** reuse `update` permission for delete
+
+21. **Sensitive field-level permissions**:
+    - Financial fields (cost_price, salary, commission, margins) use separate `module.field.read`
+    - Form dialogs receive `canView`/`canEdit` props for sensitive fields
+    - CSV/export excludes sensitive columns without permission
+    - Table columns hide sensitive data without permission
+
+22. **Separate vs shared permissions**:
+    - Different operations (transfer vs adjustment) use distinct permission keys
+    - Don't use generic permissions like `stock.create` when specific ones exist (`transfers.create`, `adjustments.create`)
+

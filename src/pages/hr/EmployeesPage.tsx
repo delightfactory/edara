@@ -207,7 +207,7 @@ export function EmployeesPage() {
                 employees={employees} loading={loading}
                 page={page} totalPages={totalPages} total={total}
                 canUpdate={can('hr.employees.update')}
-                canDelete={can('hr.employees.update')}
+                canDelete={can('hr.employees.delete')}
                 canCreate={can('hr.employees.create')}
                 deleting={deleting} search={search}
                 hasFilters={!!filterDepartment}

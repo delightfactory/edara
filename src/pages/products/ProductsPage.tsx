@@ -167,13 +167,16 @@ export function ProductsPage() {
                 </div>
                 {can('products.products.create') && (
                     <div className="flex items-center gap-2">
-                        <button onClick={() => exportToCSV(products, [
-                            { key: 'name', label: 'الاسم' },
-                            { key: 'sku', label: 'الكود' },
-                            { key: 'barcode', label: 'الباركود' },
-                            { key: 'cost_price', label: 'سعر التكلفة' },
-                            { key: 'selling_price', label: 'سعر البيع' },
-                        ], 'المنتجات')} className="btn btn-secondary" title="تصدير CSV">
+                        <button onClick={() => {
+                            const cols: { key: keyof ProductWithRefs; label: string }[] = [
+                                { key: 'name', label: 'الاسم' },
+                                { key: 'sku', label: 'الكود' },
+                                { key: 'barcode', label: 'الباركود' },
+                                ...(can('products.costs.read') ? [{ key: 'cost_price' as keyof ProductWithRefs, label: 'سعر التكلفة' }] : []),
+                                { key: 'selling_price', label: 'سعر البيع' },
+                            ]
+                            exportToCSV(products, cols, 'المنتجات')
+                        }} className="btn btn-secondary" title="تصدير CSV">
                             <Download className="h-4 w-4" />
                         </button>
                         <button onClick={openCreate} className="btn btn-primary">
@@ -234,6 +237,7 @@ export function ProductsPage() {
                 canUpdate={can('products.products.update')}
                 canDelete={can('products.products.delete')}
                 canCreate={can('products.products.create')}
+                canViewCost={can('products.costs.read')}
                 deleting={deleting} search={search}
                 hasFilters={!!filterCategory || !!filterBrand}
                 onEdit={openEdit} onDelete={id => setConfirmId(id)}
@@ -249,6 +253,8 @@ export function ProductsPage() {
                 open={showForm} product={editingProduct}
                 categories={categories} brands={brands} units={units}
                 saving={saving}
+                canViewCost={can('products.costs.read')}
+                canEditCost={can('products.costs.update')}
                 onClose={() => setShowForm(false)} onSave={handleSave}
             />
         </div>

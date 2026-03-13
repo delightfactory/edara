@@ -185,7 +185,7 @@ export function SuppliersPage() {
                 suppliers={suppliers} loading={loading}
                 page={page} totalPages={totalPages} total={total}
                 canUpdate={can('purchases.suppliers.update')}
-                canDelete={can('purchases.suppliers.update')}
+                canDelete={can('purchases.suppliers.delete')}
                 canCreate={can('purchases.suppliers.create')}
                 deleting={deleting} search={search}
                 onEdit={openEdit} onDelete={id => setConfirmId(id)}

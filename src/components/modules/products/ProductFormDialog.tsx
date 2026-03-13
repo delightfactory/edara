@@ -16,12 +16,16 @@ interface ProductFormDialogProps {
     brands: Brand[]
     units: Unit[]
     saving: boolean
+    canViewCost?: boolean
+    canEditCost?: boolean
     onClose: () => void
     onSave: (data: Partial<ProductInput>, isEdit: boolean) => void
 }
 
 export function ProductFormDialog({
-    open, product, categories, brands, units, saving, onClose, onSave,
+    open, product, categories, brands, units, saving,
+    canViewCost = true, canEditCost = true,
+    onClose, onSave,
 }: ProductFormDialogProps) {
     const [form, setForm] = useState<Partial<ProductInput>>({})
     const [altUnits, setAltUnits] = useState<ProductUnitWithRef[]>([])
@@ -252,10 +256,12 @@ export function ProductFormDialog({
 
                     {/* Pricing */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>سعر التكلفة</label>
-                            <input type="number" value={form.cost_price || 0} onChange={e => setForm(f => ({ ...f, cost_price: Number(e.target.value) }))} className="form-input" dir="ltr" min={0} step="0.01" />
-                        </div>
+                        {canViewCost && (
+                            <div>
+                                <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>سعر التكلفة</label>
+                                <input type="number" value={form.cost_price || 0} onChange={e => setForm(f => ({ ...f, cost_price: Number(e.target.value) }))} className="form-input" dir="ltr" min={0} step="0.01" readOnly={!canEditCost} />
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>سعر البيع</label>
                             <input type="number" value={form.selling_price || 0} onChange={e => setForm(f => ({ ...f, selling_price: Number(e.target.value) }))} className="form-input" dir="ltr" min={0} step="0.01" />

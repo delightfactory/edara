@@ -14,6 +14,7 @@ interface ProductsTableProps {
     canUpdate: boolean
     canDelete: boolean
     canCreate: boolean
+    canViewCost: boolean
     deleting: string | null
     search: string
     hasFilters: boolean
@@ -29,7 +30,7 @@ const formatCurrency = (val: number) =>
 
 export function ProductsTable({
     products, loading, page, totalPages, total,
-    canUpdate, canDelete, canCreate, deleting,
+    canUpdate, canDelete, canCreate, canViewCost, deleting,
     search, hasFilters,
     onEdit, onDelete, onPageChange, onCreateFirst, onRowClick,
 }: ProductsTableProps) {
@@ -43,7 +44,7 @@ export function ProductsTable({
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الكود</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>التصنيف</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>العلامة</th>
-                            <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>سعر التكلفة</th>
+                            {canViewCost && <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>سعر التكلفة</th>}
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>سعر البيع</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الخصائص</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الحالة</th>
@@ -97,7 +98,7 @@ export function ProductsTable({
                                     <td className="px-4 py-3">
                                         {product.brand ? <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>{product.brand.name}</span> : <span className="text-xs" style={{ color: 'var(--text-muted)' }}>—</span>}
                                     </td>
-                                    <td className="px-4 py-3 text-xs tabular-nums" dir="ltr" style={{ color: 'var(--text-muted)' }}>{formatCurrency(product.cost_price)}</td>
+                                    {canViewCost && <td className="px-4 py-3 text-xs tabular-nums" dir="ltr" style={{ color: 'var(--text-muted)' }}>{formatCurrency(product.cost_price)}</td>}
                                     <td className="px-4 py-3 text-xs font-semibold tabular-nums" dir="ltr" style={{ color: 'var(--text-primary)' }}>{formatCurrency(product.selling_price)}</td>
                                     <td className="px-4 py-3">
                                         <div className="flex flex-wrap gap-1">

@@ -44,6 +44,7 @@ export const navigationConfig: NavGroup[] = [
                 label: 'لوحة القيادة',
                 href: '/',
                 icon: LayoutDashboard,
+                permission: 'reports.dashboards.read',
             },
         ],
     },

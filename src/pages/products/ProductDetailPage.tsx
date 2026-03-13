@@ -141,13 +141,17 @@ export function ProductDetailPage() {
                         <Receipt className="h-4 w-4" style={{ color: 'var(--color-primary-600)' }} />
                         <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>الأسعار</h3>
                     </div>
-                    <InfoRow label="سعر التكلفة" value={formatCurrency(product.cost_price)} />
+                    {can('products.costs.read') && (
+                        <InfoRow label="سعر التكلفة" value={formatCurrency(product.cost_price)} />
+                    )}
                     <InfoRow label="سعر البيع" value={formatCurrency(product.selling_price)} />
-                    <InfoRow label="هامش الربح"
-                        value={product.cost_price > 0
-                            ? `${(((product.selling_price - product.cost_price) / product.cost_price) * 100).toFixed(1)}%`
-                            : '—'}
-                        valueColor="var(--color-success)" />
+                    {can('products.costs.read') && (
+                        <InfoRow label="هامش الربح"
+                            value={product.cost_price > 0
+                                ? `${(((product.selling_price - product.cost_price) / product.cost_price) * 100).toFixed(1)}%`
+                                : '—'}
+                            valueColor="var(--color-success)" />
+                    )}
                     <InfoRow label="خاضع للضريبة" value={product.is_taxable ? `نعم (${product.tax_percentage}%)` : 'لا'} />
                 </div>
 
@@ -243,6 +247,8 @@ export function ProductDetailPage() {
                 open={showForm} product={product}
                 categories={categories} brands={brands} units={units}
                 saving={formSaving}
+                canViewCost={can('products.costs.read')}
+                canEditCost={can('products.costs.update')}
                 onClose={() => setShowForm(false)} onSave={handleFormSave}
             />
         </div>

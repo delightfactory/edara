@@ -377,6 +377,82 @@ if (!can('auth.users.read')) return <NoPermissionPage />
 2. **Pages**: Always check `can('module.entity.read')` at page level
 3. **Create buttons**: Guard with `can('module.entity.create')`
 4. **Edit/Update**: Guard with `can('module.entity.update')`
-5. **Delete/Deactivate**: Guard with `can('module.entity.delete')`
+5. **Delete/Deactivate**: Guard with `can('module.entity.delete')` — **NEVER** reuse `update` for delete
 6. **Backend**: RLS policies are the ultimate enforcement — UI is a UX layer only
 7. **New modules**: MUST define permissions in the migration and register them in `permissions` table
+8. **Separate permissions for separate actions**: Transfer and adjustment use different permissions (`inventory.transfers.create` vs `inventory.adjustments.create`)
+
+#### 6. Sensitive Field-Level Permissions (CRITICAL)
+
+> [!CAUTION]
+> **Sensitive financial fields** (cost prices, margins, salaries, commissions) MUST be guarded with separate field-level permissions.
+> Do NOT assume that `module.entity.read` grants visibility over ALL fields.
+
+```tsx
+// ✅ CORRECT — field-level permission
+{can('products.costs.read') && (
+    <InfoRow label="سعر التكلفة" value={formatCurrency(product.cost_price)} />
+)}
+
+// ❌ WRONG — cost visible to anyone with products.products.read
+<InfoRow label="سعر التكلفة" value={formatCurrency(product.cost_price)} />
+```
+
+**Sensitive fields requiring field-level permissions:**
+
+| Field | View Permission | Edit Permission |
+|-------|----------------|-----------------|
+| `cost_price` (سعر التكلفة) | `products.costs.read` | `products.costs.update` |
+| `profit_margin` (هامش الربح) | `products.costs.read` | — (calculated) |
+| `salary` (الراتب) | `hr.payroll.read` | `hr.payroll.manage` |
+| `commission` (العمولة) | `commissions.calculations.read` | `commissions.calculations.approve` |
+
+#### 7. Form Dialogs — MUST Pass Permission Props
+
+> [!IMPORTANT]
+> Form dialogs that contain sensitive fields MUST receive permission props and conditionally render/hide those fields.
+
+```tsx
+// ✅ CORRECT — pass canViewCost to form dialog
+<ProductFormDialog
+    canViewCost={can('products.costs.read')}
+    canEditCost={can('products.costs.update')}
+    ...
+/>
+
+// Inside dialog:
+{canViewCost && (
+    <div>
+        <label>سعر التكلفة</label>
+        <input readOnly={!canEditCost} value={form.cost_price} />
+    </div>
+)}
+```
+
+#### 8. CSV/Export — MUST Filter Sensitive Columns
+
+```tsx
+// ✅ CORRECT — conditionally include cost in export
+const cols = [
+    { key: 'name', label: 'الاسم' },
+    ...(can('products.costs.read')
+        ? [{ key: 'cost_price', label: 'سعر التكلفة' }]
+        : []),
+    { key: 'selling_price', label: 'سعر البيع' },
+]
+exportToCSV(products, cols, 'المنتجات')
+```
+
+### Permission Checklist (for Every New Module)
+
+- [ ] Nav link has `permission` field
+- [ ] Page has `can('module.entity.read')` guard
+- [ ] Create button: `can('module.entity.create')`
+- [ ] Edit button: `can('module.entity.update')`
+- [ ] Delete button: `can('module.entity.delete')` — NOT reusing update
+- [ ] Sensitive fields: separate `module.field.read` permission
+- [ ] Form dialogs: receive and respect permission props
+- [ ] CSV export: filter columns by permission
+- [ ] DB migration: permissions seeded in `permissions` table
+- [ ] DB migration: permissions assigned to admin role
+

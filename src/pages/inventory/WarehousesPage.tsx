@@ -90,7 +90,7 @@ export function WarehousesPage() {
                         <p className="page-subtitle">{warehouses.length} مستودع</p>
                     </div>
                 </div>
-                {can('inventory.stock.update') && (
+                {can('inventory.warehouses.create') && (
                     <button onClick={openCreate} className="btn btn-primary">
                         <Plus className="h-4 w-4" /> إضافة مستودع
                     </button>
@@ -99,9 +99,9 @@ export function WarehousesPage() {
 
             <WarehousesTable
                 warehouses={warehouses} loading={loading}
-                canUpdate={can('inventory.stock.update')}
-                canDelete={can('inventory.stock.update')}
-                canCreate={can('inventory.stock.update')}
+                canUpdate={can('inventory.warehouses.update')}
+                canDelete={can('inventory.warehouses.delete')}
+                canCreate={can('inventory.warehouses.create')}
                 deleting={deleting}
                 onEdit={openEdit} onDelete={id => setConfirmId(id)} onCreateFirst={openCreate}
             />
