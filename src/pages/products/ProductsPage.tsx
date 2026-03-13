@@ -42,6 +42,7 @@ export function ProductsPage() {
     const debouncedSearch = useDebounce(search)
     const [filterCategory, setFilterCategory] = useState('')
     const [filterBrand, setFilterBrand] = useState('')
+    const [filterActive, setFilterActive] = useState('')
 
     // Form
     const [showForm, setShowForm] = useState(false)
@@ -83,6 +84,7 @@ export function ProductsPage() {
                 search: debouncedSearch || undefined,
                 category_id: filterCategory || undefined,
                 brand_id: filterBrand || undefined,
+                is_active: filterActive === '' ? undefined : filterActive === 'true',
             }
             const result = await getProducts(filters)
             setProducts(result.data)
@@ -92,7 +94,7 @@ export function ProductsPage() {
         } finally {
             setLoading(false)
         }
-    }, [page, pageSize, debouncedSearch, filterCategory, filterBrand])
+    }, [page, pageSize, debouncedSearch, filterCategory, filterBrand, filterActive])
 
     useEffect(() => { loadProducts() }, [loadProducts])
 
@@ -207,9 +209,17 @@ export function ProductsPage() {
                             {brands.filter(b => b.is_active).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
                     </div>
+                    <div className="relative" style={{ minWidth: '8rem' }}>
+                        <Filter className="absolute right-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5" style={{ color: 'var(--text-muted)' }} />
+                        <select value={filterActive} onChange={e => { setFilterActive(e.target.value); setPage(1) }} className="form-input" style={{ paddingInlineStart: '2.25rem' }}>
+                            <option value="">الكل</option>
+                            <option value="true">نشط</option>
+                            <option value="false">معطّل</option>
+                        </select>
+                    </div>
                     {/* Clear filters */}
-                    {(search || filterCategory || filterBrand) && (
-                        <button onClick={() => { setSearch(''); setFilterCategory(''); setFilterBrand(''); setPage(1) }}
+                    {(search || filterCategory || filterBrand || filterActive) && (
+                        <button onClick={() => { setSearch(''); setFilterCategory(''); setFilterBrand(''); setFilterActive(''); setPage(1) }}
                             className="btn btn-ghost text-xs gap-1" style={{ color: 'var(--text-muted)' }}>
                             <X className="h-3.5 w-3.5" /> مسح الفلاتر
                         </button>

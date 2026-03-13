@@ -8,6 +8,7 @@ interface CategoriesTableProps {
     categories: Category[]
     allCategories: Category[]
     loading: boolean
+    productCounts?: Record<string, number>
     canUpdate: boolean
     canDelete: boolean
     canCreate: boolean
@@ -18,7 +19,7 @@ interface CategoriesTableProps {
 }
 
 export function CategoriesTable({
-    categories, allCategories, loading,
+    categories, allCategories, loading, productCounts = {},
     canUpdate, canDelete, canCreate, deleting,
     onEdit, onDelete, onCreateFirst,
 }: CategoriesTableProps) {
@@ -52,6 +53,9 @@ export function CategoriesTable({
                 ) : (
                     <span className="text-xs" style={{ color: 'var(--text-muted)' }}>رئيسي</span>
                 )}
+            </td>
+            <td className="px-4 py-3">
+                <span className="badge badge-secondary text-[10px]">{productCounts[cat.id] || 0} منتج</span>
             </td>
             <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-muted)' }}>{cat.sort_order}</td>
             <td className="px-4 py-3">
@@ -92,6 +96,7 @@ export function CategoriesTable({
                         <tr style={{ backgroundColor: 'var(--table-header-bg)' }}>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>التصنيف</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الأب</th>
+                            <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>المنتجات</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الترتيب</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الحالة</th>
                             {canUpdate && <th className="px-4 py-3 w-20"></th>}

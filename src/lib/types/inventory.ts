@@ -137,3 +137,40 @@ export interface ProfileLookup {
     id: string
     full_name: string
 }
+
+// ── Stock Transactions (grouped operations) ──────────────────
+
+export type TransactionType = 'transfer' | 'adjustment' | 'initial' | 'scrap' | 'purchase_in' | 'sales_out' | 'return_in' | 'return_out'
+
+export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
+    transfer: 'تحويل مخزني',
+    adjustment: 'تسوية مخزنية',
+    initial: 'رصيد افتتاحي',
+    scrap: 'إتلاف',
+    purchase_in: 'استلام مشتريات',
+    sales_out: 'صرف مبيعات',
+    return_in: 'مرتجع عملاء',
+    return_out: 'مرتجع مشتريات',
+}
+
+export interface StockTransaction {
+    id: string
+    transaction_number: string
+    transaction_type: TransactionType
+    from_warehouse_id: string | null
+    to_warehouse_id: string | null
+    warehouse_id: string | null
+    notes: string | null
+    status: string
+    items_count: number
+    total_quantity: number
+    created_by: string | null
+    created_at: string
+}
+
+export interface StockTransactionWithRefs extends StockTransaction {
+    from_warehouse?: { name: string } | null
+    to_warehouse?: { name: string } | null
+    warehouse?: { name: string } | null
+    creator?: { full_name: string } | null
+}

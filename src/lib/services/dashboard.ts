@@ -66,3 +66,38 @@ export async function getRecentActivity(limit = 10): Promise<RecentActivity[]> {
         user_name: row.user_id ? (userMap[row.user_id] || null) : null,
     }))
 }
+
+// ── Low Stock Products (L4) ──────────────────────────────────
+
+export interface LowStockProduct {
+    product_name: string
+    warehouse_name: string
+    quantity: number
+    min_stock: number
+}
+
+export async function getLowStockProducts(limit = 5): Promise<LowStockProduct[]> {
+    const { data, error } = await supabase
+        .from('stock')
+        .select('quantity, product:products!product_id ( name, min_stock ), warehouse:warehouses!warehouse_id ( name )')
+        .gt('quantity', 0)
+
+    if (error || !data) return []
+
+    const results: LowStockProduct[] = []
+    for (const row of data) {
+        const product = row.product as unknown as { name: string; min_stock: number } | null
+        const warehouse = row.warehouse as unknown as { name: string } | null
+        if (product && product.min_stock > 0 && (row.quantity as number) <= product.min_stock) {
+            results.push({
+                product_name: product.name,
+                warehouse_name: warehouse?.name || '—',
+                quantity: row.quantity as number,
+                min_stock: product.min_stock,
+            })
+        }
+    }
+
+    return results.slice(0, limit)
+}
+

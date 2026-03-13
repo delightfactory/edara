@@ -9,8 +9,20 @@ import type {
     StockWithRefs, StockFilters,
     StockBatchWithRefs,
     StockMovementWithRefs,
+    StockTransactionWithRefs,
+    MovementType,
     ProfileLookup,
 } from '@/lib/types/inventory'
+
+// ── Stock Movement Input ─────────────────────────────────────
+
+export interface StockMovementInput {
+    product_id: string
+    warehouse_id: string
+    movement_type: MovementType
+    quantity: number
+    notes?: string | null
+}
 
 // ── Warehouses ───────────────────────────────────────────────
 
@@ -96,7 +108,7 @@ export async function getStock(filters: StockFilters = {}): Promise<{ data: Stoc
         .from('stock')
         .select(`
             *,
-            product:products!product_id ( name, sku, min_stock, unit_id ),
+            product:products!product_id ( name, sku, min_stock, unit_id, unit:units!unit_id ( name, symbol ) ),
             warehouse:warehouses!warehouse_id ( name, type )
         `)
         .gt('quantity', 0) // Only show items with positive stock
@@ -160,10 +172,12 @@ export async function getStockMovements(filters: {
     warehouse_id?: string
     product_id?: string
     movement_type?: string
+    date_from?: string
+    date_to?: string
     page?: number
     pageSize?: number
 } = {}): Promise<{ data: StockMovementWithRefs[]; total: number }> {
-    const { warehouse_id, product_id, movement_type, page = 1, pageSize = 25 } = filters
+    const { warehouse_id, product_id, movement_type, date_from, date_to, page = 1, pageSize = 25 } = filters
 
     let countQuery = supabase
         .from('stock_movements')
@@ -172,6 +186,8 @@ export async function getStockMovements(filters: {
     if (warehouse_id) countQuery = countQuery.eq('warehouse_id', warehouse_id)
     if (product_id) countQuery = countQuery.eq('product_id', product_id)
     if (movement_type) countQuery = countQuery.eq('movement_type', movement_type)
+    if (date_from) countQuery = countQuery.gte('created_at', date_from)
+    if (date_to) countQuery = countQuery.lte('created_at', date_to + 'T23:59:59')
 
     const { count } = await countQuery
     const total = count || 0
@@ -188,6 +204,8 @@ export async function getStockMovements(filters: {
     if (warehouse_id) query = query.eq('warehouse_id', warehouse_id)
     if (product_id) query = query.eq('product_id', product_id)
     if (movement_type) query = query.eq('movement_type', movement_type)
+    if (date_from) query = query.gte('created_at', date_from)
+    if (date_to) query = query.lte('created_at', date_to + 'T23:59:59')
 
     query = query
         .order('created_at', { ascending: false })
@@ -209,4 +227,180 @@ export async function getProfileLookups(): Promise<ProfileLookup[]> {
 
     if (error) throw error
     return (data || []) as ProfileLookup[]
+}
+
+// ── Product Lookups (for movement forms) ─────────────────────
+
+export interface ProductLookup {
+    id: string
+    name: string
+    sku: string | null
+    unit_id: string | null
+}
+
+export async function getProductLookups(): Promise<ProductLookup[]> {
+    const { data, error } = await supabase
+        .from('products')
+        .select('id, name, sku, unit_id')
+        .eq('is_active', true)
+        .order('name')
+
+    if (error) throw error
+    return (data || []) as ProductLookup[]
+}
+
+// ── Create Stock Movements — Batch + Atomic (C1) ─────────────
+
+export interface MovementLineItem {
+    product_id: string
+    quantity: number
+    notes?: string | null
+}
+
+export interface BatchMovementInput {
+    warehouse_id: string
+    movement_type: MovementType
+    items: MovementLineItem[]
+    direction?: 'in' | 'out'  // for adjustments: increase or decrease
+}
+
+export async function createStockMovementsBatch(input: BatchMovementInput): Promise<void> {
+    const { warehouse_id, movement_type, items, direction } = input
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const payload = {
+        user_id: user?.id || '',
+        transaction_type: movement_type,
+        direction: direction || 'in',
+        items: items.map(it => ({
+            product_id: it.product_id,
+            warehouse_id,
+            movement_type,
+            quantity: Math.abs(it.quantity),
+            notes: it.notes || null,
+        })),
+    }
+
+    const { error } = await supabase.rpc('process_stock_movements_batch', {
+        p_payload: payload,
+    })
+    if (error) throw error
+}
+
+// ── Create Transfer — Batch + Atomic (C2) ────────────────────
+
+export interface TransferLineItem {
+    product_id: string
+    quantity: number
+}
+
+export interface BatchTransferInput {
+    from_warehouse_id: string
+    to_warehouse_id: string
+    items: TransferLineItem[]
+    notes?: string | null
+}
+
+export async function createTransferBatch(input: BatchTransferInput): Promise<void> {
+    const { from_warehouse_id, to_warehouse_id, items, notes } = input
+    const { data: { user } } = await supabase.auth.getUser()
+
+    const payload = {
+        from_warehouse_id,
+        to_warehouse_id,
+        user_id: user?.id || '',
+        notes: notes || '',
+        items: items.map(it => ({
+            product_id: it.product_id,
+            quantity: Math.abs(it.quantity),
+        })),
+    }
+
+    const { error } = await supabase.rpc('process_stock_transfer_batch', {
+        p_payload: payload,
+    })
+    if (error) throw error
+}
+
+// ── Warehouse stock summary (for L3) ─────────────────────────
+
+export async function getWarehouseStockSummary(): Promise<Record<string, { count: number; value: number }>> {
+    const { data, error } = await supabase
+        .from('stock')
+        .select('warehouse_id, quantity, product:products!product_id ( cost_price )')
+        .gt('quantity', 0)
+
+    if (error) throw error
+    const result: Record<string, { count: number; value: number }> = {}
+    for (const row of (data || [])) {
+        const wid = row.warehouse_id as string
+        if (!result[wid]) result[wid] = { count: 0, value: 0 }
+        result[wid].count += 1
+        const cost = (row.product as unknown as { cost_price: number })?.cost_price || 0
+        result[wid].value += (row.quantity as number) * cost
+    }
+    return result
+}
+
+// ── Stock Transactions ───────────────────────────────────────
+
+export async function getStockTransactions(filters: {
+    transaction_type?: string
+    date_from?: string
+    date_to?: string
+    page?: number
+    pageSize?: number
+} = {}): Promise<{ data: StockTransactionWithRefs[]; total: number }> {
+    const { transaction_type, date_from, date_to, page = 1, pageSize = 25 } = filters
+
+    let countQuery = supabase
+        .from('stock_transactions')
+        .select('id', { count: 'exact', head: true })
+
+    if (transaction_type) countQuery = countQuery.eq('transaction_type', transaction_type)
+    if (date_from) countQuery = countQuery.gte('created_at', date_from)
+    if (date_to) countQuery = countQuery.lte('created_at', date_to + 'T23:59:59')
+
+    const { count } = await countQuery
+    const total = count || 0
+
+    let query = supabase
+        .from('stock_transactions')
+        .select(`
+            *,
+            from_warehouse:warehouses!from_warehouse_id ( name ),
+            to_warehouse:warehouses!to_warehouse_id ( name ),
+            warehouse:warehouses!warehouse_id ( name ),
+            creator:profiles!created_by ( full_name )
+        `)
+
+    if (transaction_type) query = query.eq('transaction_type', transaction_type)
+    if (date_from) query = query.gte('created_at', date_from)
+    if (date_to) query = query.lte('created_at', date_to + 'T23:59:59')
+
+    query = query
+        .order('created_at', { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize - 1)
+
+    const { data, error } = await query
+    if (error) throw error
+
+    return { data: (data || []) as StockTransactionWithRefs[], total }
+}
+
+export async function getTransactionMovements(transactionId: string): Promise<StockMovementWithRefs[]> {
+    const { data, error } = await supabase
+        .from('stock_movements')
+        .select(`
+            *,
+            product:products!product_id ( name ),
+            warehouse:warehouses!warehouse_id ( name ),
+            creator:profiles!created_by ( full_name )
+        `)
+        .eq('reference_type', 'stock_transaction')
+        .eq('reference_id', transactionId)
+        .order('created_at')
+
+    if (error) throw error
+    return (data || []) as StockMovementWithRefs[]
 }

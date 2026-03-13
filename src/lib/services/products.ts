@@ -386,3 +386,50 @@ export async function deletePriceListItem(id: string) {
 
     if (error) throw error
 }
+
+// ── Product Count helpers (L1, L2, L6) ───────────────────────
+
+export async function getProductCountByCategory(): Promise<Record<string, number>> {
+    const { data, error } = await supabase
+        .from('products')
+        .select('category_id')
+        .eq('is_active', true)
+
+    if (error) throw error
+    const counts: Record<string, number> = {}
+    for (const row of (data || [])) {
+        const cid = row.category_id as string | null
+        if (cid) counts[cid] = (counts[cid] || 0) + 1
+    }
+    return counts
+}
+
+export async function getProductCountByBrand(): Promise<Record<string, number>> {
+    const { data, error } = await supabase
+        .from('products')
+        .select('brand_id')
+        .eq('is_active', true)
+
+    if (error) throw error
+    const counts: Record<string, number> = {}
+    for (const row of (data || [])) {
+        const bid = row.brand_id as string | null
+        if (bid) counts[bid] = (counts[bid] || 0) + 1
+    }
+    return counts
+}
+
+export async function getPriceListItemCounts(): Promise<Record<string, number>> {
+    const { data, error } = await supabase
+        .from('price_list_items')
+        .select('price_list_id')
+
+    if (error) throw error
+    const counts: Record<string, number> = {}
+    for (const row of (data || [])) {
+        const pid = row.price_list_id as string
+        counts[pid] = (counts[pid] || 0) + 1
+    }
+    return counts
+}
+

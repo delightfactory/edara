@@ -202,14 +202,20 @@ export function StockPage() {
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm font-semibold tabular-nums" dir="ltr" style={{ color: 'var(--text-primary)' }}>
-                                                    {formatNumber(item.quantity)}
+                                                <td className="px-4 py-3 text-sm font-semibold tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                                                    <span dir="ltr">{formatNumber(item.quantity)}</span>
+                                                    {(item.product as unknown as { unit?: { symbol?: string } })?.unit?.symbol && (
+                                                        <span className="text-[10px] mr-1" style={{ color: 'var(--text-muted)' }}>{(item.product as unknown as { unit: { symbol: string } }).unit.symbol}</span>
+                                                    )}
                                                 </td>
-                                                <td className="px-4 py-3 text-sm tabular-nums" dir="ltr" style={{ color: item.reserved_qty > 0 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
-                                                    {formatNumber(item.reserved_qty)}
+                                                <td className="px-4 py-3 text-sm tabular-nums" style={{ color: item.reserved_qty > 0 ? 'var(--color-warning)' : 'var(--text-muted)' }}>
+                                                    <span dir="ltr">{formatNumber(item.reserved_qty)}</span>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm font-bold tabular-nums" dir="ltr" style={{ color: available > 0 ? 'var(--color-primary-600)' : 'var(--color-danger)' }}>
-                                                    {formatNumber(available)}
+                                                <td className="px-4 py-3 text-sm font-bold tabular-nums" style={{ color: available > 0 ? 'var(--color-primary-600)' : 'var(--color-danger)' }}>
+                                                    <span dir="ltr">{formatNumber(available)}</span>
+                                                    {(item.product as unknown as { unit?: { symbol?: string } })?.unit?.symbol && (
+                                                        <span className="text-[10px] mr-1" style={{ color: 'var(--text-muted)' }}>{(item.product as unknown as { unit: { symbol: string } }).unit.symbol}</span>
+                                                    )}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     {isLow ? (

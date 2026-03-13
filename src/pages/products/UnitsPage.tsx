@@ -158,7 +158,10 @@ export function UnitsPage() {
                                             <td className="px-4 py-3 text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{u.name}</td>
                                             <td className="px-4 py-3"><span className="badge badge-info">{u.symbol}</span></td>
                                             <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-secondary)' }}>{baseUnit?.name || '— أساسية —'}</td>
-                                            <td className="px-4 py-3 text-sm tabular-nums" dir="ltr" style={{ color: 'var(--text-secondary)' }}>{u.conversion_factor}</td>
+                                            <td className="px-4 py-3 text-sm tabular-nums" dir="ltr" style={{ color: 'var(--text-secondary)' }}>
+                                                {u.conversion_factor}
+                                                {baseUnit && <span className="text-[10px] mr-2" style={{ color: 'var(--text-muted)' }}>(1 {u.name} = {u.conversion_factor} {baseUnit.name})</span>}
+                                            </td>
                                             {can('products.products.update') && (
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1">
@@ -216,6 +219,11 @@ export function UnitsPage() {
                                 <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>معامل التحويل</label>
                                 <input type="number" value={form.conversion_factor || 1} onChange={e => setForm(f => ({ ...f, conversion_factor: Number(e.target.value) }))}
                                     className="form-input" dir="ltr" min={0.0001} step="0.01" />
+                                {form.base_unit_id && (form.conversion_factor || 1) > 0 && (
+                                    <p className="mt-2 text-xs font-medium px-3 py-2 rounded-lg" style={{ backgroundColor: 'var(--color-primary-50)', color: 'var(--color-primary-700)' }}>
+                                        💡 1 {form.name || 'وحدة'} = {form.conversion_factor || 1} {units.find(u => u.id === form.base_unit_id)?.name || 'وحدة أساسية'}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <div className="flex items-center justify-end gap-3 px-6 py-4" style={{ borderTop: '1px solid var(--divider-color)' }}>

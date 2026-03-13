@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react'
 import {
     Package, X, Loader2, Beaker, Receipt,
-    ToggleLeft, ToggleRight, Plus, Trash2, Layers,
+    ToggleLeft, ToggleRight, Plus, Trash2, Layers, Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { ProductWithRefs, ProductInput, Category, Brand, Unit, ProductUnitWithRef } from '@/lib/types/products'
-import { getProductUnits, createProductUnit, deleteProductUnit } from '@/lib/services/products'
+import { getProductUnits, createProductUnit, updateProductUnit, deleteProductUnit } from '@/lib/services/products'
 import { ImageUploadField } from '@/components/ui/ImageUploadField'
 
 interface ProductFormDialogProps {
@@ -27,6 +27,8 @@ export function ProductFormDialog({
     const [altUnits, setAltUnits] = useState<ProductUnitWithRef[]>([])
     const [newUnit, setNewUnit] = useState({ unit_id: '', conversion_factor: 1, barcode: '', selling_price: 0 })
     const [addingUnit, setAddingUnit] = useState(false)
+    const [editingUnitId, setEditingUnitId] = useState<string | null>(null)
+    const [editUnitForm, setEditUnitForm] = useState({ conversion_factor: 1, barcode: '', selling_price: 0 })
 
     useEffect(() => {
         if (open) {
@@ -90,6 +92,32 @@ export function ProductFormDialog({
             setAltUnits(prev => prev.filter(u => u.id !== id))
             toast.success('تم حذف الوحدة')
         } catch { toast.error('فشل الحذف') }
+    }
+
+    const startEditUnit = (pu: ProductUnitWithRef) => {
+        setEditingUnitId(pu.id)
+        setEditUnitForm({
+            conversion_factor: pu.conversion_factor,
+            barcode: pu.barcode || '',
+            selling_price: pu.selling_price || 0,
+        })
+    }
+
+    const handleUpdateUnit = async () => {
+        if (!editingUnitId) return
+        try {
+            await updateProductUnit(editingUnitId, {
+                conversion_factor: Number(editUnitForm.conversion_factor) || 1,
+                barcode: editUnitForm.barcode || null,
+                selling_price: Number(editUnitForm.selling_price) || null,
+            })
+            if (product) {
+                const updated = await getProductUnits(product.id)
+                setAltUnits(updated)
+            }
+            setEditingUnitId(null)
+            toast.success('تم تحديث الوحدة')
+        } catch { toast.error('فشل التحديث') }
     }
 
     const handleSubmit = () => {
@@ -278,20 +306,49 @@ export function ProductFormDialog({
                                 {altUnits.length > 0 && (
                                     <div className="space-y-2 mb-3">
                                         {altUnits.map(pu => (
-                                            <div key={pu.id} className="flex items-center justify-between rounded-xl px-4 py-2.5" style={{ backgroundColor: 'var(--empty-bg)' }}>
-                                                <div className="flex items-center gap-3 min-w-0">
-                                                    <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
-                                                        {pu.unit?.name || 'وحدة'}
-                                                    </span>
-                                                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>({pu.unit?.symbol})</span>
-                                                    <span className="text-xs badge badge-primary">×{pu.conversion_factor}</span>
-                                                    {pu.barcode && <span className="text-[10px]" dir="ltr" style={{ color: 'var(--text-muted)' }}>{pu.barcode}</span>}
-                                                    {pu.selling_price != null && <span className="text-xs font-medium" style={{ color: 'var(--color-primary-600)' }}>{pu.selling_price} ج.م</span>}
+                                            editingUnitId === pu.id ? (
+                                                <div key={pu.id} className="rounded-xl p-3 border space-y-2" style={{ borderColor: 'var(--color-primary-300)', backgroundColor: 'var(--empty-bg)' }}>
+                                                    <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{pu.unit?.name} ({pu.unit?.symbol})</p>
+                                                    <div className="grid grid-cols-3 gap-2">
+                                                        <div>
+                                                            <label className="block text-[10px] mb-0.5" style={{ color: 'var(--text-muted)' }}>معامل تحويل</label>
+                                                            <input type="number" value={editUnitForm.conversion_factor} onChange={e => setEditUnitForm(f => ({ ...f, conversion_factor: Number(e.target.value) }))} className="form-input text-sm py-1.5" dir="ltr" min={1} />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] mb-0.5" style={{ color: 'var(--text-muted)' }}>باركود</label>
+                                                            <input type="text" value={editUnitForm.barcode} onChange={e => setEditUnitForm(f => ({ ...f, barcode: e.target.value }))} className="form-input text-sm py-1.5" dir="ltr" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[10px] mb-0.5" style={{ color: 'var(--text-muted)' }}>سعر بيع</label>
+                                                            <input type="number" value={editUnitForm.selling_price} onChange={e => setEditUnitForm(f => ({ ...f, selling_price: Number(e.target.value) }))} className="form-input text-sm py-1.5" dir="ltr" min={0} step="0.01" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        <button onClick={() => setEditingUnitId(null)} className="btn btn-secondary btn-sm text-xs">إلغاء</button>
+                                                        <button onClick={handleUpdateUnit} className="btn btn-primary btn-sm text-xs">حفظ</button>
+                                                    </div>
                                                 </div>
-                                                <button onClick={() => handleDeleteUnit(pu.id)} className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-red-50 dark:hover:bg-red-950/30">
-                                                    <Trash2 className="h-3.5 w-3.5 text-red-500" />
-                                                </button>
-                                            </div>
+                                            ) : (
+                                                <div key={pu.id} className="flex items-center justify-between rounded-xl px-4 py-2.5" style={{ backgroundColor: 'var(--empty-bg)' }}>
+                                                    <div className="flex items-center gap-3 min-w-0">
+                                                        <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                                            {pu.unit?.name || 'وحدة'}
+                                                        </span>
+                                                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>({pu.unit?.symbol})</span>
+                                                        <span className="text-xs badge badge-primary">×{pu.conversion_factor}</span>
+                                                        {pu.barcode && <span className="text-[10px]" dir="ltr" style={{ color: 'var(--text-muted)' }}>{pu.barcode}</span>}
+                                                        {pu.selling_price != null && <span className="text-xs font-medium" style={{ color: 'var(--color-primary-600)' }}>{pu.selling_price} ج.م</span>}
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <button onClick={() => startEditUnit(pu)} className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-primary-50 dark:hover:bg-primary-950/30">
+                                                            <Pencil className="h-3 w-3" style={{ color: 'var(--text-muted)' }} />
+                                                        </button>
+                                                        <button onClick={() => handleDeleteUnit(pu.id)} className="flex h-7 w-7 items-center justify-center rounded-lg transition-colors hover:bg-red-50 dark:hover:bg-red-950/30">
+                                                            <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )
                                         ))}
                                     </div>
                                 )}

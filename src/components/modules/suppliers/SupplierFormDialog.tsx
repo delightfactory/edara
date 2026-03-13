@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import {
     X, Loader2, Building2, ToggleLeft, ToggleRight, Check, Factory,
-    Phone, Plus, Trash2,
+    Phone, Plus, Trash2, Pencil,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { SupplierWithRefs, SupplierInput } from '@/lib/types/suppliers'
 import type { BrandLookup } from '@/lib/types/suppliers'
 import type { SupplierContact, SupplierContactInput } from '@/lib/types/suppliers'
 import { PAYMENT_TERMS_LABELS } from '@/lib/types/suppliers'
-import { getSupplierContacts, createSupplierContact, deleteSupplierContact } from '@/lib/services/suppliers'
+import { getSupplierContacts, createSupplierContact, deleteSupplierContact, updateSupplierContact } from '@/lib/services/suppliers'
 import type { PaymentTermsType } from '@/lib/types/customers'
 import { toast } from 'sonner'
 
@@ -29,6 +29,8 @@ export function SupplierFormDialog({
     const [contacts, setContacts] = useState<SupplierContact[]>([])
     const [newContact, setNewContact] = useState<Partial<SupplierContactInput>>({ name: '', phone: null, role: null })
     const [addingContact, setAddingContact] = useState(false)
+    const [editingContactId, setEditingContactId] = useState<string | null>(null)
+    const [editContactForm, setEditContactForm] = useState<{ name: string; phone: string; role: string }>({ name: '', phone: '', role: '' })
 
     useEffect(() => {
         if (open) {
@@ -215,24 +217,62 @@ export function SupplierFormDialog({
                         ) : (
                             <div className="space-y-2">
                                 {contacts.map(c => (
-                                    <div key={c.id} className="flex items-center justify-between rounded-xl px-3 py-2.5" style={{ backgroundColor: 'var(--empty-bg)' }}>
-                                        <div>
-                                            <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
-                                            <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                                                {c.role && <span>{c.role} • </span>}
-                                                {c.phone && <span dir="ltr">{c.phone}</span>}
-                                            </p>
+                                    editingContactId === c.id ? (
+                                        <div key={c.id} className="rounded-xl p-3 border space-y-2" style={{ borderColor: 'var(--color-primary-300)', backgroundColor: 'var(--empty-bg)' }}>
+                                            <input type="text" value={editContactForm.name} onChange={e => setEditContactForm(f => ({ ...f, name: e.target.value }))}
+                                                className="form-input" placeholder="الاسم *" />
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input type="tel" value={editContactForm.phone} onChange={e => setEditContactForm(f => ({ ...f, phone: e.target.value }))}
+                                                    className="form-input" dir="ltr" placeholder="الهاتف" />
+                                                <input type="text" value={editContactForm.role} onChange={e => setEditContactForm(f => ({ ...f, role: e.target.value }))}
+                                                    className="form-input" placeholder="الدور" />
+                                            </div>
+                                            <div className="flex items-center justify-end gap-2">
+                                                <button onClick={() => setEditingContactId(null)} className="btn btn-secondary btn-sm text-xs">إلغاء</button>
+                                                <button onClick={async () => {
+                                                    if (!editContactForm.name.trim()) return
+                                                    try {
+                                                        await updateSupplierContact(c.id, {
+                                                            name: editContactForm.name,
+                                                            phone: editContactForm.phone || null,
+                                                            role: editContactForm.role || null,
+                                                        })
+                                                        const updated = await getSupplierContacts(supplier.id)
+                                                        setContacts(updated)
+                                                        setEditingContactId(null)
+                                                        toast.success('تم التحديث')
+                                                    } catch { toast.error('فشل التحديث') }
+                                                }} disabled={!editContactForm.name.trim()} className="btn btn-primary btn-sm text-xs">حفظ</button>
+                                            </div>
                                         </div>
-                                        <button onClick={async () => {
-                                            try {
-                                                await deleteSupplierContact(c.id)
-                                                setContacts(prev => prev.filter(x => x.id !== c.id))
-                                                toast.success('تم الحذف')
-                                            } catch { toast.error('فشل الحذف') }
-                                        }} className="flex h-6 w-6 items-center justify-center rounded-lg hover:bg-danger/10">
-                                            <Trash2 className="h-2.5 w-2.5" style={{ color: 'var(--text-muted)' }} />
-                                        </button>
-                                    </div>
+                                    ) : (
+                                        <div key={c.id} className="flex items-center justify-between rounded-xl px-3 py-2.5" style={{ backgroundColor: 'var(--empty-bg)' }}>
+                                            <div>
+                                                <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{c.name}</p>
+                                                <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                                    {c.role && <span>{c.role} • </span>}
+                                                    {c.phone && <span dir="ltr">{c.phone}</span>}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-1">
+                                                <button onClick={() => {
+                                                    setEditingContactId(c.id)
+                                                    setEditContactForm({ name: c.name, phone: c.phone || '', role: c.role || '' })
+                                                }} className="flex h-6 w-6 items-center justify-center rounded-lg hover:bg-primary-50 dark:hover:bg-primary-950/30">
+                                                    <Pencil className="h-2.5 w-2.5" style={{ color: 'var(--text-muted)' }} />
+                                                </button>
+                                                <button onClick={async () => {
+                                                    try {
+                                                        await deleteSupplierContact(c.id)
+                                                        setContacts(prev => prev.filter(x => x.id !== c.id))
+                                                        toast.success('تم الحذف')
+                                                    } catch { toast.error('فشل الحذف') }
+                                                }} className="flex h-6 w-6 items-center justify-center rounded-lg hover:bg-danger/10">
+                                                    <Trash2 className="h-2.5 w-2.5" style={{ color: 'var(--text-muted)' }} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )
                                 ))}
                                 {addingContact ? (
                                     <div className="rounded-xl p-3 border space-y-2" style={{ borderColor: 'var(--card-border)' }}>

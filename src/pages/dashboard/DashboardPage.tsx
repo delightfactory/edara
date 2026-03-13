@@ -8,8 +8,8 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
 import { usePageTitle } from '@/lib/hooks/usePageTitle'
 import { getCompanySettings } from '@/lib/services/settings'
-import { getDashboardStats, getRecentActivity } from '@/lib/services/dashboard'
-import type { DashboardStats, RecentActivity } from '@/lib/services/dashboard'
+import { getDashboardStats, getRecentActivity, getLowStockProducts } from '@/lib/services/dashboard'
+import type { DashboardStats, RecentActivity, LowStockProduct } from '@/lib/services/dashboard'
 
 const ACTION_LABELS: Record<string, string> = {
     INSERT: 'إضافة',
@@ -44,6 +44,7 @@ export function DashboardPage() {
     const [companyName, setCompanyName] = useState('الشركة')
     const [stats, setStats] = useState<DashboardStats | null>(null)
     const [activities, setActivities] = useState<RecentActivity[]>([])
+    const [lowStockProducts, setLowStockProducts] = useState<LowStockProduct[]>([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -55,9 +56,11 @@ export function DashboardPage() {
         Promise.all([
             getDashboardStats(),
             getRecentActivity(8),
-        ]).then(([s, a]) => {
+            getLowStockProducts(5),
+        ]).then(([s, a, lsp]) => {
             setStats(s)
             setActivities(a)
+            setLowStockProducts(lsp)
         }).catch(() => { }).finally(() => setLoading(false))
     }, [])
 
@@ -170,20 +173,40 @@ export function DashboardPage() {
 
             {/* Low Stock Alert */}
             {stats && stats.lowStockCount > 0 && (
-                <div className="edara-card p-4 sm:p-5 flex items-center gap-3 cursor-pointer transition-colors edara-tr-hover"
+                <div className="edara-card overflow-hidden cursor-pointer transition-colors edara-tr-hover"
                     style={{ borderRightWidth: '4px', borderRightColor: 'var(--color-danger)' }}
                     onClick={() => navigate('/inventory/stock')}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/30 shrink-0">
-                        <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <div className="flex items-center gap-3 p-4 sm:p-5">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 dark:bg-red-950/30 shrink-0">
+                            <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                                تنبيه: {formatNumber(stats.lowStockCount)} منتج تحت الحد الأدنى
+                            </p>
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                                راجع أرصدة المخزون واتخذ إجراء التوريد اللازم
+                            </p>
+                        </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
-                            تنبيه: {formatNumber(stats.lowStockCount)} منتج تحت الحد الأدنى
-                        </p>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                            راجع أرصدة المخزون واتخذ إجراء التوريد اللازم
-                        </p>
-                    </div>
+                    {lowStockProducts.length > 0 && (
+                        <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+                            <div className="space-y-1.5">
+                                {lowStockProducts.map((p, i) => (
+                                    <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg text-xs" style={{ backgroundColor: 'var(--empty-bg)' }}>
+                                        <div>
+                                            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{p.product_name}</span>
+                                            <span className="text-[10px] mr-2" style={{ color: 'var(--text-muted)' }}>{p.warehouse_name}</span>
+                                        </div>
+                                        <div className="tabular-nums" dir="ltr">
+                                            <span className="font-bold text-danger">{p.quantity}</span>
+                                            <span style={{ color: 'var(--text-muted)' }}> / {p.min_stock}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 

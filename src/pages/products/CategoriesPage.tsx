@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FolderTree, Plus } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
-import { getCategories, createCategory, updateCategory, deleteCategory } from '@/lib/services/products'
+import { getCategories, createCategory, updateCategory, deleteCategory, getProductCountByCategory } from '@/lib/services/products'
 import type { Category, CategoryInput } from '@/lib/types/products'
 import { CategoriesTable } from '@/components/modules/products/CategoriesTable'
 import { CategoryFormDialog } from '@/components/modules/products/CategoryFormDialog'
@@ -13,6 +13,7 @@ export function CategoriesPage() {
     usePageTitle('التصنيفات')
     const { can } = useAuthStore()
     const [categories, setCategories] = useState<Category[]>([])
+    const [productCounts, setProductCounts] = useState<Record<string, number>>({})
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [editing, setEditing] = useState<Category | null>(null)
@@ -22,8 +23,9 @@ export function CategoriesPage() {
     const loadData = async () => {
         setLoading(true)
         try {
-            const data = await getCategories()
+            const [data, counts] = await Promise.all([getCategories(), getProductCountByCategory()])
             setCategories(data)
+            setProductCounts(counts)
         } catch {
             toast.error('حدث خطأ في تحميل التصنيفات')
         } finally {
@@ -94,6 +96,7 @@ export function CategoriesPage() {
             <CategoriesTable
                 categories={categories} allCategories={categories}
                 loading={loading}
+                productCounts={productCounts}
                 canUpdate={can('products.categories.update')}
                 canDelete={can('products.categories.delete')}
                 canCreate={can('products.categories.create')}
