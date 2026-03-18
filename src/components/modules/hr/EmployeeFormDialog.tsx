@@ -6,6 +6,7 @@ import {
 import type { EmployeeWithRefs, EmployeeInput, SalesRepInput, RepType, DepartmentLookup } from '@/lib/types/hr'
 import { REP_TYPE_LABELS } from '@/lib/types/hr'
 import type { ProfileLookup } from '@/lib/types/inventory'
+import { getActiveBranches } from '@/lib/services/geography'
 
 interface EmployeeFormDialogProps {
     open: boolean
@@ -23,6 +24,11 @@ export function EmployeeFormDialog({
     const [form, setForm] = useState<Partial<EmployeeInput>>({})
     const [isSalesRep, setIsSalesRep] = useState(false)
     const [repForm, setRepForm] = useState<Partial<SalesRepInput>>({})
+    const [branches, setBranches] = useState<{ id: string; name: string }[]>([])
+
+    useEffect(() => {
+        getActiveBranches().then(setBranches).catch(() => {})
+    }, [])
 
     useEffect(() => {
         if (open) {
@@ -34,6 +40,7 @@ export function EmployeeFormDialog({
                     job_title: employee.job_title,
                     hire_date: employee.hire_date,
                     salary: employee.salary,
+                    branch_id: employee.branch_id ?? null,
                     is_active: employee.is_active,
                 })
                 if (employee.sales_rep) {
@@ -52,7 +59,7 @@ export function EmployeeFormDialog({
             } else {
                 setForm({
                     profile_id: '', employee_code: null, department_id: null,
-                    job_title: null, hire_date: null, salary: 0, is_active: true,
+                    job_title: null, hire_date: null, salary: 0, branch_id: null, is_active: true,
                 })
                 setIsSalesRep(false)
                 setRepForm({ rep_type: 'van_sales', territory: null, vehicle_type: null, max_customers: 100, is_active: true })
@@ -137,6 +144,14 @@ export function EmployeeFormDialog({
                         <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>الراتب الأساسي</label>
                         <input type="number" value={form.salary || 0} onChange={e => setForm(f => ({ ...f, salary: Number(e.target.value) }))}
                             className="form-input" dir="ltr" min={0} step="100" />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>الفرع</label>
+                        <select value={form.branch_id || ''} onChange={e => setForm(f => ({ ...f, branch_id: e.target.value || null }))} className="form-input">
+                            <option value="">— بدون فرع —</option>
+                            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
                     </div>
 
                     {/* Active Toggle */}

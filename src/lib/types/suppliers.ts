@@ -18,6 +18,7 @@ export interface Supplier {
     address: string | null
     payment_terms: PaymentTermsType
     is_manufacturer: boolean
+    current_balance: number
     is_active: boolean
     created_at: string
     updated_at: string

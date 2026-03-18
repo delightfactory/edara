@@ -3,6 +3,7 @@ import { X, Loader2, Warehouse as WarehouseIcon, ToggleLeft, ToggleRight } from 
 import type { WarehouseWithRefs, WarehouseInput, WarehouseType } from '@/lib/types/inventory'
 import type { ProfileLookup } from '@/lib/types/inventory'
 import { WAREHOUSE_TYPE_LABELS } from '@/lib/types/inventory'
+import { getActiveBranches } from '@/lib/services/geography'
 
 interface WarehouseFormDialogProps {
     open: boolean
@@ -17,6 +18,11 @@ export function WarehouseFormDialog({
     open, warehouse, profiles, saving, onClose, onSave,
 }: WarehouseFormDialogProps) {
     const [form, setForm] = useState<Partial<WarehouseInput>>({})
+    const [branches, setBranches] = useState<{ id: string; name: string }[]>([])
+
+    useEffect(() => {
+        getActiveBranches().then(setBranches).catch(() => {})
+    }, [])
 
     useEffect(() => {
         if (open) {
@@ -27,12 +33,13 @@ export function WarehouseFormDialog({
                     type: warehouse.type,
                     manager_id: warehouse.manager_id,
                     assigned_rep_id: warehouse.assigned_rep_id,
+                    branch_id: warehouse.branch_id ?? null,
                     is_active: warehouse.is_active,
                 })
             } else {
                 setForm({
                     name: '', location: '', type: 'main',
-                    manager_id: null, assigned_rep_id: null, is_active: true,
+                    manager_id: null, assigned_rep_id: null, branch_id: null, is_active: true,
                 })
             }
         }
@@ -123,6 +130,14 @@ export function WarehouseFormDialog({
                     )}
 
                     {/* Active toggle */}
+                    <div>
+                        <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>الفرع</label>
+                        <select value={form.branch_id || ''} onChange={e => setForm(f => ({ ...f, branch_id: e.target.value || null }))} className="form-input">
+                            <option value="">— بدون فرع —</option>
+                            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                        </select>
+                    </div>
+
                     <button type="button" onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))}
                         className="flex items-center justify-between rounded-xl px-4 py-3 w-full transition-all duration-200"
                         style={{ backgroundColor: 'var(--empty-bg)' }}>

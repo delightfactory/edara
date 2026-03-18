@@ -406,6 +406,12 @@ if (!can('auth.users.read')) return <NoPermissionPage />
 | `profit_margin` (هامش الربح) | `products.costs.read` | — (calculated) |
 | `salary` (الراتب) | `hr.payroll.read` | `hr.payroll.manage` |
 | `commission` (العمولة) | `commissions.calculations.read` | `commissions.calculations.approve` |
+| `vault_balance` (رصيد الخزنة) | `finance.vaults.read` | — (auto-calculated) |
+| `custody_balance` (رصيد العهدة) | `finance.custody.read` | `finance.custody.manage` |
+| `customer_balance` (رصيد العميل) | `sales.orders.read` | — (auto-calculated) |
+| `supplier_balance` (رصيد المورد) | `purchases.orders.read` | — (auto-calculated) |
+| `credit_limit` (الحد الائتماني) | `sales.orders.read` | `credit.policies.update` |
+| `discount_override` (تجاوز الخصم) | `sales.discounts.manage` | `sales.discounts.manage` |
 
 #### 7. Form Dialogs — MUST Pass Permission Props
 

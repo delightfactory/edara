@@ -72,6 +72,9 @@ export interface Customer {
     default_delivery_method: DeliveryMethod
     price_list_id: string | null
     assigned_rep_id: string | null
+    governorate_id: string | null
+    city_id: string | null
+    area_id: string | null
     is_active: boolean
     created_at: string
     updated_at: string
@@ -98,6 +101,9 @@ export interface CustomerInput {
     default_delivery_method: DeliveryMethod
     price_list_id: string | null
     assigned_rep_id: string | null
+    governorate_id: string | null
+    city_id: string | null
+    area_id: string | null
     is_active: boolean
 }
 

@@ -46,6 +46,7 @@ export interface Warehouse {
     type: WarehouseType
     manager_id: string | null
     assigned_rep_id: string | null
+    branch_id: string | null
     is_active: boolean
     created_at: string
     updated_at: string
@@ -62,6 +63,7 @@ export interface WarehouseInput {
     type: WarehouseType
     manager_id: string | null
     assigned_rep_id: string | null
+    branch_id: string | null
     is_active: boolean
 }
 

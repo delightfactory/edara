@@ -29,6 +29,7 @@ export interface Employee {
     job_title: string | null
     hire_date: string | null
     salary: number
+    branch_id: string | null
     is_active: boolean
     created_at: string
     updated_at: string
@@ -47,6 +48,7 @@ export interface EmployeeInput {
     job_title: string | null
     hire_date: string | null
     salary: number
+    branch_id: string | null
     is_active: boolean
 }
 

@@ -20,6 +20,8 @@ import {
     getCustomerAddresses, createCustomerAddress, deleteCustomerAddress,
     updateCustomerAddress,
 } from '@/lib/services/customers'
+import { getGovernorates, getCities, getAreas } from '@/lib/services/geography'
+import type { Governorate } from '@/lib/types/geography'
 import type { ProfileLookup } from '@/lib/types/inventory'
 import { toast } from 'sonner'
 
@@ -62,6 +64,11 @@ export function CustomerFormDialog({
     const [editAddressForm, setEditAddressForm] = useState<Partial<CustomerAddressInput>>({})
     const [locatingEditGPS, setLocatingEditGPS] = useState(false)
 
+    // Geography cascading
+    const [governorates, setGovernorates] = useState<Governorate[]>([])
+    const [cities, setCities] = useState<{ id: string; name: string }[]>([])
+    const [areas, setAreas] = useState<{ id: string; name: string }[]>([])
+
     useEffect(() => {
         if (open) {
             setActiveTab('basic')
@@ -82,6 +89,9 @@ export function CustomerFormDialog({
                     default_delivery_method: customer.default_delivery_method,
                     price_list_id: customer.price_list_id,
                     assigned_rep_id: customer.assigned_rep_id,
+                    governorate_id: customer.governorate_id ?? null,
+                    city_id: customer.city_id ?? null,
+                    area_id: customer.area_id ?? null,
                     is_active: customer.is_active,
                 })
             } else {
@@ -91,7 +101,9 @@ export function CustomerFormDialog({
                     customer_type: 'retail', classification: 'C',
                     credit_limit: 0, payment_terms: 'cash',
                     tax_registration_number: null, default_delivery_method: 'direct',
-                    price_list_id: null, assigned_rep_id: null, is_active: true,
+                    price_list_id: null, assigned_rep_id: null,
+                    governorate_id: null, city_id: null, area_id: null,
+                    is_active: true,
                 })
             }
         }
@@ -111,6 +123,29 @@ export function CustomerFormDialog({
     // Business rule: wholesale/service_center → tax number required
     const isTaxRequired = form.customer_type === 'wholesale' || form.customer_type === 'service_center'
 
+    // Load governorates once
+    useEffect(() => {
+        getGovernorates().then(setGovernorates).catch(() => {})
+    }, [])
+
+    // Load cities when governorate changes
+    useEffect(() => {
+        if (form.governorate_id) {
+            getCities(form.governorate_id).then(c => setCities(c.map(x => ({ id: x.id, name: x.name })))).catch(() => {})
+        } else {
+            setCities([])
+        }
+    }, [form.governorate_id])
+
+    // Load areas when city changes
+    useEffect(() => {
+        if (form.city_id) {
+            getAreas(form.city_id).then(a => setAreas(a.map(x => ({ id: x.id, name: x.name })))).catch(() => {})
+        } else {
+            setAreas([])
+        }
+    }, [form.city_id])
+
     const handleSubmit = () => {
         if (!form.name?.trim()) return
         if (isTaxRequired && !form.tax_registration_number?.trim()) return
@@ -124,6 +159,9 @@ export function CustomerFormDialog({
             tax_registration_number: form.tax_registration_number || null,
             price_list_id: form.price_list_id || null,
             assigned_rep_id: form.assigned_rep_id || null,
+            governorate_id: form.governorate_id || null,
+            city_id: form.city_id || null,
+            area_id: form.area_id || null,
             credit_limit: Number(form.credit_limit) || 0,
         }
         onSave(payload, !!customer)
@@ -347,6 +385,32 @@ export function CustomerFormDialog({
                                     </label>
                                     <input type="number" value={form.gps_lng || ''} onChange={e => setForm(f => ({ ...f, gps_lng: Number(e.target.value) || null }))}
                                         className="form-input" dir="ltr" step="0.0000001" placeholder="46.6753" />
+                                </div>
+                            </div>
+
+                            {/* Geography */}
+                            <div className="edara-divider" />
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>المحافظة</label>
+                                    <select value={form.governorate_id || ''} onChange={e => setForm(f => ({ ...f, governorate_id: e.target.value || null, city_id: null, area_id: null }))} className="form-input">
+                                        <option value="">— اختر —</option>
+                                        {governorates.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>المدينة</label>
+                                    <select value={form.city_id || ''} onChange={e => setForm(f => ({ ...f, city_id: e.target.value || null, area_id: null }))} className="form-input" disabled={!form.governorate_id}>
+                                        <option value="">— اختر —</option>
+                                        {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>المنطقة</label>
+                                    <select value={form.area_id || ''} onChange={e => setForm(f => ({ ...f, area_id: e.target.value || null }))} className="form-input" disabled={!form.city_id}>
+                                        <option value="">— اختر —</option>
+                                        {areas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                                    </select>
                                 </div>
                             </div>
                         </>

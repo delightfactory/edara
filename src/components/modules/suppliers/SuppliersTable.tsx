@@ -40,6 +40,7 @@ export function SuppliersTable({
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الكود</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>شروط الدفع</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>العلامات التجارية</th>
+                            <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الرصيد</th>
                             <th className="px-4 py-3 text-right text-xs font-bold uppercase" style={{ color: 'var(--text-muted)' }}>الحالة</th>
                             {canUpdate && <th className="px-4 py-3 w-20"></th>}
                         </tr>
@@ -111,6 +112,9 @@ export function SuppliersTable({
                                                 : <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>—</span>
                                             }
                                         </div>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm font-semibold tabular-nums" dir="ltr" style={{ color: (s.current_balance || 0) > 0 ? 'var(--color-danger)' : 'var(--text-secondary)' }}>
+                                        {(s.current_balance || 0).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </td>
                                     <td className="px-4 py-3">
                                         <span className={cn('badge', s.is_active ? 'badge-success' : 'badge-danger')}>{s.is_active ? 'نشط' : 'معطّل'}</span>

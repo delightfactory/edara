@@ -13,7 +13,7 @@ This workflow defines the EXACT steps to follow when developing any module in th
 
 ### Phase A: Planning (Before Writing Code)
 
-1. **Review the implementation plan** — Read `implementation_plan.md` and `gap_analysis.md` for the module being developed. Identify ALL features, sub-features, and edge cases.
+1. **Review the implementation plan** — Read `docs/ROADMAP.md` and `implementation_plan.md` for the module being developed. Identify ALL features, sub-features, and edge cases. Cross-reference with `docs/SYSTEM_BLUEPRINT.md` for business process details.
 
 2. **Review existing infrastructure** — Check ALL existing database tables, types, services, and components to avoid duplication and ensure integration.
 
@@ -150,4 +150,42 @@ This workflow defines the EXACT steps to follow when developing any module in th
 22. **Separate vs shared permissions**:
     - Different operations (transfer vs adjustment) use distinct permission keys
     - Don't use generic permissions like `stock.create` when specific ones exist (`transfers.create`, `adjustments.create`)
+
+### Phase K: Atomic Operations & Business Rules (MANDATORY for Sales/Purchases/Finance)
+
+> [!CAUTION]
+> ALL compound operations (confirm order, approve receipt, record payment, etc.) MUST be implemented as `plpgsql SECURITY DEFINER` functions — NEVER as client-side multi-step processes.
+
+23. **Atomic DB functions**:
+    - Every compound operation uses a single PostgreSQL function with `FOR UPDATE` row locks
+    - Functions use `pg_advisory_xact_lock` for sequence generation (order numbers)
+    - Pattern: validate → lock rows → update all related tables → create audit entries → return result
+    - On any error, the entire transaction rolls back automatically
+
+24. **Unit conversion enforcement**:
+    - All inventory operations store `base_quantity = quantity × conversion_factor`
+    - Stock table always tracks quantities in the base unit (e.g., pieces)
+    - Display can use any unit; storage is ALWAYS in base unit
+    - `product_units.conversion_factor` is the single source of truth
+
+25. **Partial returns support**:
+    - Return items link to `order_item_id` (original order item)
+    - `quantity` on return item can be less than original order item quantity
+    - Validation: `return_quantity ≤ original_quantity - already_returned_quantity`
+
+26. **Credit management**:
+    - `check_credit_limit()` called BEFORE confirming any credit sale
+    - Formula: `current_balance + new_order_total ≤ credit_limit`
+    - Overdue payments trigger `check_credit_violations()` which creates violations and notifications
+
+27. **Approval workflows**:
+    - `approval_rules` table defines max amounts per role/user
+    - `can_approve(user_id, type, amount)` checks if user can approve given amount
+    - If amount exceeds user's limit, auto-escalate to next approval level
+    - Expenses, purchase orders, and discount overrides use this system
+
+28. **Auto journal entries**:
+    - Every financial operation (sale, purchase, payment, expense) auto-generates a journal entry
+    - `auto_journal_entry(source_type, source_id)` creates debit/credit lines based on operation type
+    - Users NEVER create journal entries manually (except accountant override)
 
